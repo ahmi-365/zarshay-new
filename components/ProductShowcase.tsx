@@ -51,9 +51,9 @@ export function ProductShowcase() {
             </div>
 
             <p className="text-gray-600 text-lg leading-relaxed">
-              Founded with a passion for pure, effective skincare, Bloomix crafts every product to
-              deliver exceptional results while respecting your skin's natural balance and the
-              planet.
+              Founded with a passion for pure, effective skincare, Zarshay
+              crafts every product to deliver exceptional results while
+              respecting your skin's natural balance and the planet.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -65,7 +65,9 @@ export function ProductShowcase() {
                   <h3 className="font-medium text-gray-800 group-hover:text-teal-600 transition-colors duration-300">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-gray-600 leading-relaxed">{item.desc}</p>
+                  <p className="text-xs text-gray-600 leading-relaxed">
+                    {item.desc}
+                  </p>
                 </div>
               ))}
             </div>

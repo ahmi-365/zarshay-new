@@ -3,21 +3,20 @@
 import { useState, useEffect } from "react";
 import {
   ArrowLeft,
-  ShoppingCart,
-  Mail,
-  MapPin,
-  Phone,
-  Package,
-  Sparkles,
-  Heart,
-  Truck,
-  CheckCircle,
+  CheckCircle2,
   XCircle,
+  Truck,
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
+  ShieldCheck,
+  ShoppingBag,
+  ArrowRight,
 } from "lucide-react";
-import { Footer } from "@/components/Footer";
-import { Navigation } from "@/components/Navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
-// Cart Item Interface
+// --- Interfaces ---
 interface CartItem {
   id: number;
   name: string;
@@ -60,17 +59,16 @@ interface PromoCodeResponse {
 }
 
 export default function CheckoutPage() {
-  const [scrollY, setScrollY] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const [emailNews, setEmailNews] = useState(false);
-  const [saveInfo, setSaveInfo] = useState(false);
   const [items, setItems] = useState<CartItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
-  // Form state
+  const [isMobileSummaryOpen, setIsMobileSummaryOpen] = useState(false);
+
+  // Form State
   const [email, setEmail] = useState("");
+  const [emailNews, setEmailNews] = useState(false);
+  const [saveInfo, setSaveInfo] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [address, setAddress] = useState("");
@@ -81,17 +79,13 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState("");
   const [note, setNote] = useState("");
 
-  // Promo code state
-  const [validatedPromoCode, setValidatedPromoCode] = useState<PromoCodeData | null>(null);
+  // Promo Code State
+  const [validatedPromoCode, setValidatedPromoCode] =
+    useState<PromoCodeData | null>(null);
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener("scroll", handleScroll);
-    setIsVisible(true);
-    
-    // Load cart from localStorage
     const savedCart = localStorage.getItem("cart");
     if (savedCart) {
       try {
@@ -100,88 +94,55 @@ export default function CheckoutPage() {
         console.error("Failed to load cart:", error);
       }
     }
-    
-    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  
-  // Calculate discount
-  const discountAmount = validatedPromoCode ? 
-    validatedPromoCode.discount_type === "percentage" 
+  // Calculations
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
+
+  const discountAmount = validatedPromoCode
+    ? validatedPromoCode.discount_type === "percentage"
       ? (subtotal * parseFloat(validatedPromoCode.discount_value)) / 100
       : parseFloat(validatedPromoCode.discount_value)
     : 0;
 
   const total = Math.max(0, subtotal - discountAmount);
 
-  // Validate promo code
+  // --- Handlers ---
+
   const validatePromoCode = async () => {
     if (!promoCode.trim()) {
-      setPromoError("Please enter a promo code");
+      setPromoError("Enter a code");
       return;
     }
-
     setIsValidatingPromo(true);
     setPromoError(null);
 
     try {
-      const response = await fetch(`https://bloomix.majesticsofts.com/api/promo-code/discount`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          promo_code: promoCode.trim()
-        }),
-      });
+      const response = await fetch(
+        `https://api.zarshay.com/api/promo-code/discount`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ promo_code: promoCode.trim() }),
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error("Failed to validate promo code");
-      }
-
+      if (!response.ok) throw new Error("Invalid code");
       const result: PromoCodeResponse = await response.json();
 
       if (result.status === "success") {
-        const promoData = result.data;
-        
-        // Check if promo code is active
-        const now = new Date();
-        const startDate = new Date(promoData.start_date);
-        const endDate = new Date(promoData.end_date);
-
-        if (now < startDate) {
-          setPromoError("This promo code is not yet active");
-          return;
-        }
-
-        if (now > endDate) {
-          setPromoError("This promo code has expired");
-          return;
-        }
-
-        if (promoData.used_count >= promoData.usage_limit) {
-          setPromoError("This promo code has reached its usage limit");
-          return;
-        }
-
-        setValidatedPromoCode(promoData);
-        setPromoError(null);
+        setValidatedPromoCode(result.data);
       } else {
-        setPromoError("Invalid promo code");
+        setPromoError("Invalid code");
       }
     } catch (err) {
-      setPromoError("Invalid promo code");
+      setPromoError("Invalid code");
     } finally {
       setIsValidatingPromo(false);
     }
-  };
-
-  // Remove promo code
-  const removePromoCode = () => {
-    setValidatedPromoCode(null);
-    setPromoCode("");
-    setPromoError(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -189,541 +150,543 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setError(null);
 
-    // Transform cart items to products array
-    const products = items.map(item => ({
+    const products = items.map((item) => ({
       product_id: item.id,
-      quantity: item.quantity
+      quantity: item.quantity,
     }));
 
-    // Prepare order data matching API payload
     const orderData: OrderData = {
       customer_name: firstName,
       customer_last_name: lastName,
-      email: email,
+      email,
       customer_phone: phone,
       customer_address: address,
       apartment: apartment || undefined,
-      city: city,
+      city,
       postal_code: postalCode || undefined,
       status: "pending",
-      products: products,
-      promo_code: validatedPromoCode?.code || undefined,
+      products,
+      promo_code: validatedPromoCode?.code,
       note: note || undefined,
     };
 
     try {
-      const response = await fetch("https://bloomix.majesticsofts.com/api/save-order", {
+      const response = await fetch("https://api.zarshay.com/api/save-order", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to place order. Please try again.");
-      }
-
-      const result = await response.json();
-      
-      console.log("🎉 Order Placed Successfully!", result);
+      if (!response.ok) throw new Error("Failed to place order.");
 
       localStorage.removeItem("cart");
       setShowSuccess(true);
-      
-      setTimeout(() => {
-        setShowSuccess(false);
-      }, 10000);
-
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      setError(err instanceof Error ? err.message : "Error placing order");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Success Modal Component
-  const SuccessModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-auto transform animate-scale-in">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-          
-          <h3 className="text-2xl font-light text-gray-800 mb-4">
-            Order Confirmed!
-          </h3>
-          
-          <div className="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-6 mb-6 border border-green-200">
-            <div className="space-y-2 text-sm text-gray-700">
-              <p className="font-medium text-green-600">Thank you, {firstName}!</p>
-              <p>Your order has been successfully placed.</p>
-{validatedPromoCode && (
-  <div className="flex justify-between text-green-600 text-sm">
-    <span>
-      Discount ({validatedPromoCode.code})
-      {validatedPromoCode.discount_type === "percentage" && 
-        ` - ${validatedPromoCode.discount_value}%`
-      }
-    </span>
-    <span>
-      -Rs {discountAmount.toFixed(2)}
-    </span>
-  </div>
-)}
-              <p className="text-lg font-medium text-gray-800 mt-3">
-                Total: <span className="text-teal-600">Rs {total.toFixed(2)}</span>
-              </p>
-              <p className="text-sm text-gray-600">Cash on Delivery</p>
+  // --- Components ---
+
+  const OrderSummaryContent = () => (
+    <div className="space-y-4">
+      {/* Items List */}
+      <div className="space-y-4 max-h-[calc(100vh-300px)] overflow-y-auto pr-2 custom-scrollbar">
+        {items.map((item) => (
+          <div key={item.id} className="flex gap-4 items-center group">
+            <div className="relative w-16 h-16 rounded-xl border border-white/10 overflow-hidden bg-white/5 flex-shrink-0">
+              <img
+                src={item.image}
+                alt={item.name}
+                className="w-full h-full object-cover"
+              />
+              <span className="absolute top-0 right-0 bg-gray-500/80 backdrop-blur text-white text-[10px] px-1.5 py-0.5 rounded-bl-lg font-medium">
+                {item.quantity}
+              </span>
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-white/90 group-hover:text-white transition-colors truncate">
+                {item.name}
+              </p>
+              <p className="text-xs text-white/50">{item.brand}</p>
+            </div>
+            <p className="text-sm font-medium text-white whitespace-nowrap">
+              Rs {Math.round(item.price * item.quantity).toLocaleString()}
+            </p>
           </div>
+        ))}
+      </div>
 
-          <div className="space-y-3 text-sm text-gray-600 mb-6">
-            <p>📧 Order confirmation sent to: {email}</p>
-            <p>📦 Delivery to: {address}, {city}</p>
-            <p>📞 Contact: {phone}</p>
-          </div>
+      <div className="h-px bg-white/10 w-full" />
 
-          <div className="flex gap-3">
-            <button
-              onClick={() => setShowSuccess(false)}
-              className="flex-1 bg-teal-600 text-white py-3 rounded-xl font-medium hover:bg-teal-700 transition-all duration-300"
-            >
-              Continue Shopping
-            </button>
-            <button
-              onClick={() => window.location.href = "/"}
-              className="flex-1 border border-teal-600 text-teal-600 py-3 rounded-xl font-medium hover:bg-teal-50 transition-all duration-300"
-            >
-              Home
-            </button>
+      {/* Promo Code Input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={promoCode}
+          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+          placeholder="Discount code or gift card"
+          disabled={!!validatedPromoCode}
+          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/30 transition-colors uppercase"
+        />
+        <button
+          onClick={
+            validatedPromoCode
+              ? () => {
+                  setValidatedPromoCode(null);
+                  setPromoCode("");
+                }
+              : validatePromoCode
+          }
+          disabled={!promoCode || isValidatingPromo}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            validatedPromoCode
+              ? "bg-red-500/20 text-red-200 hover:bg-red-500/30 border border-red-500/20"
+              : "bg-white/10 text-white hover:bg-white/20 border border-white/10"
+          }`}
+        >
+          {validatedPromoCode ? "Remove" : isValidatingPromo ? "..." : "Apply"}
+        </button>
+      </div>
+      {promoError && <p className="text-xs text-red-400 mt-1">{promoError}</p>}
+      {validatedPromoCode && (
+        <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-400/10 p-2 rounded-lg border border-emerald-400/20">
+          <CheckCircle2 className="w-3 h-3" />
+          Code <b>{validatedPromoCode.code}</b> applied
+        </div>
+      )}
+
+      <div className="h-px bg-white/10 w-full" />
+
+      {/* Totals */}
+      <div className="space-y-2 text-sm text-white/70">
+        <div className="flex justify-between">
+          <span>Subtotal</span>
+          <span className="text-white">Rs {subtotal.toLocaleString()}</span>
+        </div>
+        {validatedPromoCode && (
+          <div className="flex justify-between text-emerald-400">
+            <span>Discount</span>
+            <span>- Rs {discountAmount.toLocaleString()}</span>
           </div>
+        )}
+        <div className="flex justify-between">
+          <span>Shipping</span>
+          <span className="text-xs bg-white/10 px-2 py-0.5 rounded text-white/80">
+            Calculated next step
+          </span>
+        </div>
+      </div>
+
+      <div className="h-px bg-white/10 w-full" />
+
+      <div className="flex justify-between items-baseline">
+        <span className="text-lg font-medium text-white">Total</span>
+        <div className="text-right">
+          <span className="text-xs text-white/50 mr-2">PKR</span>
+          <span className="text-2xl font-semibold text-white tracking-tight">
+            {total.toLocaleString()}
+          </span>
         </div>
       </div>
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-white">
-      <Navigation/>
+  const InputField = ({
+    label,
+    value,
+    onChange,
+    type = "text",
+    required = false,
+    placeholder = "",
+    className = "",
+  }: any) => (
+    <div className={`relative group ${className}`}>
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder=" "
+        className="peer w-full bg-white border border-gray-200 rounded-lg px-4 pt-5 pb-2 text-gray-900 placeholder-transparent focus:outline-none focus:ring-2 focus:ring-black/5 focus:border-black transition-all"
+      />
+      <label className="absolute left-4 top-1.5 text-[10px] text-gray-500 font-medium uppercase tracking-wider transition-all peer-placeholder-shown:text-sm peer-placeholder-shown:normal-case peer-placeholder-shown:text-gray-400 peer-placeholder-shown:top-3.5 peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:uppercase peer-focus:text-gray-800 peer-focus:font-bold pointer-events-none">
+        {label}
+      </label>
+    </div>
+  );
 
-      {/* Success Modal */}
-      {showSuccess && <SuccessModal />}
+  // --- Render ---
 
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-teal-50 via-cyan-50 to-emerald-50 pt-32 pb-16 overflow-hidden">
-        <div
-          className="absolute inset-0 opacity-20"
-          style={{
-            transform: `translateY(${scrollY * 0.5}px)`,
-          }}
+  if (showSuccess) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full text-center space-y-6"
         >
-          <div className="absolute top-20 left-10 w-32 h-32 bg-teal-300/40 rounded-full blur-xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-10 w-48 h-48 bg-cyan-300/40 rounded-full blur-xl animate-pulse"></div>
+          <div className="w-24 h-24 bg-gray-900 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+            <CheckCircle2 className="w-10 h-10 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-light text-gray-900 mb-2">
+              Order Confirmed
+            </h1>
+            <p className="text-gray-500">
+              Thank you, {firstName}. We've sent the receipt to {email}.
+            </p>
+          </div>
+          <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left space-y-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Amount Paid</span>
+              <span className="font-medium text-gray-900">
+                Rs {total.toLocaleString()} (COD)
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-500">Shipping To</span>
+              <span className="font-medium text-gray-900 text-right max-w-[200px] truncate">
+                {address}, {city}
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/shop"
+            className="block w-full bg-gray-900 text-white py-4 rounded-xl font-medium hover:bg-black transition-all"
+          >
+            Continue Shopping
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen flex flex-col lg:flex-row bg-white overflow-x-hidden">
+      {/* 1. Mobile Order Summary Toggle (Visible only on mobile) */}
+      <div className="lg:hidden bg-[#0a0a0a] border-b border-white/10 sticky top-0 z-50">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-xl font-serif italic font-bold text-white tracking-tighter"
+          >
+            Zarshay.
+          </Link>
+          <button
+            onClick={() => setIsMobileSummaryOpen(!isMobileSummaryOpen)}
+            className="flex items-center gap-2 text-sm text-emerald-400 font-medium"
+          >
+            <ShoppingBag className="w-4 h-4" />
+            <span>{isMobileSummaryOpen ? "Hide" : "Show"} Order Summary</span>
+            {isMobileSummaryOpen ? (
+              <ChevronUp className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+            <span className="text-white ml-1">Rs {total.toLocaleString()}</span>
+          </button>
         </div>
 
-        <div className="container mx-auto px-6 relative z-10">
-          <div
-            className={`max-w-3xl mx-auto text-center space-y-6 transform transition-all duration-1000 ${
-              isVisible ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-            }`}
-          >
-            <a href="/cart" className="inline-flex items-center gap-2 text-teal-600 hover:text-teal-700 mb-4">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Cart
-            </a>
-            <h1 className="text-4xl md:text-5xl font-light text-gray-800">Checkout</h1>
-            <p className="text-lg text-gray-600">Complete your order - Cash on Delivery</p>
+        <AnimatePresence>
+          {isMobileSummaryOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-[#0a0a0a] border-t border-white/10 overflow-hidden"
+            >
+              <div className="p-6">
+                <OrderSummaryContent />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* 2. Left Column: Desktop Order Summary (Sticky & Full Height) */}
+      {/* h-screen + sticky top-0 ensures it stays locked to the viewport */}
+      <aside className="hidden lg:flex flex-col w-[45%] bg-[#0a0a0a] border-r border-white/5 h-screen sticky top-0 z-10">
+        <div className="flex-1 flex flex-col p-6 lg:p-8 overflow-hidden">
+          {/* Branding */}
+          <div className="mb-4 flex-shrink-0">
+            <Link
+              href="/"
+              className="text-3xl font-serif italic font-bold text-white tracking-tighter hover:text-gray-300 transition-colors"
+            >
+              Zarshay.
+            </Link>
+          </div>
+
+          {/* Scrollable Content Area */}
+          <div className="flex-1 overflow-hidden pr-4">
+            <OrderSummaryContent />
+          </div>
+
+          {/* Trust Footer */}
+          <div className="mt-6 pt-4 border-t border-white/10 flex gap-4 text-xs text-white/40 flex-shrink-0">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3 h-3" /> Secure Checkout
+            </span>
+            <span>Returns Policy</span>
+            <span>Terms of Service</span>
           </div>
         </div>
-      </section>
+      </aside>
 
-      {/* Main Content */}
-      <section className="py-16 bg-white">
-        <div className="container mx-auto px-6">
-          <form onSubmit={handleSubmit} className="max-w-6xl mx-auto grid lg:grid-cols-3 gap-12">
-            {/* Left Column - Forms */}
-            <div className="lg:col-span-2 space-y-8">
-              {/* Contact Information */}
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-teal-600" />
-                  </div>
-                  <h2 className="text-2xl font-light text-gray-800">Contact Information</h2>
-                </div>
+      {/* 3. Right Column: Forms & Data Entry */}
+      <main className="flex-1 w-full bg-white overflow-y-auto">
+        <div className="max-w-2xl mx-auto p-6 md:p-12 lg:p-20 lg:pt-24">
+          {/* Desktop Breadcrumb */}
+          <div className="hidden lg:flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <Link
+                href="/cart"
+                className="hover:text-gray-900 transition-colors"
+              >
+                Cart
+              </Link>
+              <span className="text-gray-300">/</span>
+              <span className="text-gray-900 font-medium">Checkout</span>
+            </div>
+          </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Email address</label>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Enter your email"
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                    />
-                  </div>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={emailNews}
-                      onChange={(e) => setEmailNews(e.target.checked)}
-                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                    />
-                    <span className="text-sm text-gray-700">Email me with news and offers</span>
-                  </label>
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-10">
+            {/* Contact Section */}
+            <section>
+              <div className="mb-4">
+                <h2 className="text-xl font-medium text-gray-900">Contact</h2>
+                {/* "Have an account?" text removed as requested */}
               </div>
 
-              {/* Delivery Section */}
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-                    <MapPin className="w-5 h-5 text-emerald-600" />
+              <div className="space-y-4">
+                <InputField
+                  label="Email Address"
+                  type="email"
+                  value={email}
+                  onChange={(e: any) => setEmail(e.target.value)}
+                  required
+                />
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                      emailNews
+                        ? "bg-black border-black"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {emailNews && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    )}
                   </div>
-                  <h2 className="text-2xl font-light text-gray-800">Delivery</h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-2">First name</label>
-                      <input
-                        type="text"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        placeholder="First name"
-                        required
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-2">Last name</label>
-                      <input
-                        type="text"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        placeholder="Last name"
-                        required
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Address</label>
-                    <input
-                      type="text"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
-                      placeholder="Street address"
-                      required
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Apartment, suite, etc. (optional)</label>
-                    <input
-                      type="text"
-                      value={apartment}
-                      onChange={(e) => setApartment(e.target.value)}
-                      placeholder="Apartment, suite, etc."
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                    />
-                  </div>
-
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-2">City</label>
-                      <input
-                        type="text"
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        placeholder="City"
-                        required
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-2">Postal code (optional)</label>
-                      <input
-                        type="text"
-                        value={postalCode}
-                        onChange={(e) => setPostalCode(e.target.value)}
-                        placeholder="Postal code"
-                        className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Phone</label>
-                    <div className="flex gap-2">
-                      <div className="flex items-center justify-center px-4 py-3 rounded-lg border border-gray-200 bg-gray-50">
-                        <span className="text-lg">🇵🇰</span>
-                      </div>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+92 3XX XXXXXXX"
-                        required
-                        className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={saveInfo}
-                      onChange={(e) => setSaveInfo(e.target.checked)}
-                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
-                    />
-                    <span className="text-sm text-gray-700">Save this information for next time</span>
-                  </label>
-                </div>
+                  <input
+                    type="checkbox"
+                    checked={emailNews}
+                    onChange={(e) => setEmailNews(e.target.checked)}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-gray-500 group-hover:text-gray-900 transition-colors">
+                    Email me with news and offers
+                  </span>
+                </label>
               </div>
+            </section>
 
-              {/* Payment Method - Cash on Delivery */}
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center">
-                    <Truck className="w-5 h-5 text-cyan-600" />
-                  </div>
-                  <h2 className="text-2xl font-light text-gray-800">Payment Method</h2>
+            {/* Shipping Section */}
+            <section>
+              <h2 className="text-xl font-medium text-gray-900 mb-4">
+                Delivery
+              </h2>
+              <div className="space-y-4">
+                {/* Country Mock */}
+                <div className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3.5 text-gray-500 text-sm flex justify-between cursor-not-allowed">
+                  <span>Pakistan</span>
+                  <span className="text-xs font-medium bg-gray-200 px-2 py-0.5 rounded">
+                    International shipping coming soon
+                  </span>
                 </div>
 
-                <div className="p-6 rounded-xl border-2 border-teal-500 bg-teal-50">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center">
-                      <Package className="w-6 h-6 text-teal-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-800">Cash on Delivery</h3>
-                      <p className="text-sm text-gray-600">Pay when you receive your order</p>
-                    </div>
-                  </div>
-                  <div className="mt-4 p-4 bg-white rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <strong className="text-teal-700">Note:</strong> Please keep exact change ready. Our delivery partner will collect Rs {total.toFixed(2)} at the time of delivery.
-                    </p>
-                  </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField
+                    label="First Name"
+                    value={firstName}
+                    onChange={(e: any) => setFirstName(e.target.value)}
+                    required
+                  />
+                  <InputField
+                    label="Last Name"
+                    value={lastName}
+                    onChange={(e: any) => setLastName(e.target.value)}
+                    required
+                  />
                 </div>
+
+                <InputField
+                  label="Address"
+                  value={address}
+                  onChange={(e: any) => setAddress(e.target.value)}
+                  required
+                />
+                <InputField
+                  label="Apartment, suite, etc. (optional)"
+                  value={apartment}
+                  onChange={(e: any) => setApartment(e.target.value)}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField
+                    label="City"
+                    value={city}
+                    onChange={(e: any) => setCity(e.target.value)}
+                    required
+                  />
+                  <InputField
+                    label="Postal Code (optional)"
+                    value={postalCode}
+                    onChange={(e: any) => setPostalCode(e.target.value)}
+                  />
+                </div>
+
+                <InputField
+                  label="Phone"
+                  type="tel"
+                  value={phone}
+                  onChange={(e: any) => setPhone(e.target.value)}
+                  required
+                  placeholder="+92 3XX..."
+                />
+
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div
+                    className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors flex-shrink-0 ${
+                      saveInfo
+                        ? "bg-black border-black"
+                        : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    {saveInfo && (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                    )}
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={saveInfo}
+                    onChange={(e) => setSaveInfo(e.target.checked)}
+                    className="hidden"
+                  />
+                  <span className="text-sm text-gray-500 group-hover:text-gray-900 transition-colors">
+                    Save this information for next time
+                  </span>
+                </label>
               </div>
+            </section>
 
-              {/* Delivery Notes */}
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                    <Package className="w-5 h-5 text-amber-600" />
+            {/* Payment Section */}
+            <section>
+              <h2 className="text-xl font-medium text-gray-900 mb-2">
+                Payment
+              </h2>
+              <p className="text-sm text-gray-500 mb-4">
+                All transactions are secure and encrypted.
+              </p>
+
+              <div className="rounded-xl border border-gray-200 overflow-hidden">
+                {/* Selected Option: COD */}
+                <div className="bg-gray-50/50 p-4 border-b border-gray-200 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full border-[5px] border-black bg-white"></div>
+                    <span className="font-medium text-gray-900 text-sm">
+                      Cash on Delivery (COD)
+                    </span>
                   </div>
-                  <h2 className="text-2xl font-light text-gray-800">Delivery Notes</h2>
+                  <Truck className="w-5 h-5 text-gray-900" />
+                </div>
+                {/* COD Content */}
+                <div className="bg-gray-50 p-6 flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm mb-2">
+                    <ShoppingBag className="w-6 h-6 text-gray-400" />
+                  </div>
+                  <p className="text-sm text-gray-600 max-w-xs mx-auto">
+                    You will pay <b>Rs {total.toLocaleString()}</b> in cash when
+                    the courier delivers your order.
+                  </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">
-                      Special instructions (optional)
-                    </label>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="E.g., Please deliver between 5 PM to 8 PM"
-                      rows={3}
-                      className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all resize-none"
-                    />
-                    <p className="text-xs text-gray-500 mt-2">
-                      Add any special delivery instructions or preferred delivery time
-                    </p>
+                {/* Disabled Option: Card */}
+                <div className="opacity-50 p-4 flex items-center justify-between bg-white cursor-not-allowed">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded-full border border-gray-300"></div>
+                    <span className="font-medium text-gray-900 text-sm">
+                      Credit Card (Coming Soon)
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <CreditCard className="w-5 h-5 text-gray-400" />
                   </div>
                 </div>
               </div>
+            </section>
 
-              {/* Promo Code Section */}
-              <div className="bg-white rounded-3xl p-8 shadow-lg border border-gray-100">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-purple-600" />
-                  </div>
-                  <h2 className="text-2xl font-light text-gray-800">Promo Code</h2>
-                </div>
+            {/* Delivery Note */}
+            <section>
+              <InputField
+                label="Delivery Instructions (Optional)"
+                value={note}
+                onChange={(e: any) => setNote(e.target.value)}
+              />
+            </section>
 
-                <div className="space-y-4">
-{validatedPromoCode ? (
-  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-    <div className="flex items-center justify-between">
-      <div>
-        <div className="flex items-center gap-2 mb-1">
-          <CheckCircle className="w-4 h-4 text-green-600" />
-          <span className="font-medium text-green-800">
-            Promo code applied: {validatedPromoCode.code}
-          </span>
-        </div>
-        <p className="text-sm text-green-700">
-          {validatedPromoCode.discount_type === "percentage" 
-            ? `${validatedPromoCode.discount_value}% off` 
-            : `Rs ${validatedPromoCode.discount_value} off`
-          }
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={removePromoCode}
-        className="text-red-600 hover:text-red-700 text-sm font-medium"
-      >
-        Remove
-      </button>
-    </div>
-  </div>
-) : (
-                    <div className="space-y-3">
-                      <div className="flex gap-3">
-                        <input
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                          placeholder="Enter promo code"
-                          className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none transition-all uppercase"
-                          disabled={isValidatingPromo}
-                        />
-                        <button
-                          type="button"
-                          onClick={validatePromoCode}
-                          disabled={isValidatingPromo || !promoCode.trim()}
-                          className="px-6 py-3 bg-teal-600 text-white rounded-lg font-medium hover:bg-teal-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isValidatingPromo ? (
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            "Apply"
-                          )}
-                        </button>
-                      </div>
-                      {promoError && (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-center gap-2">
-                          <XCircle className="w-4 h-4 text-red-600" />
-                          <p className="text-red-700 text-sm">{promoError}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Error Message */}
+            {/* Error Display */}
+            <AnimatePresence>
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-                  <XCircle className="w-5 h-5 text-red-600" />
-                  <p className="text-red-700 text-sm">{error}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm flex items-center gap-2"
+                >
+                  <XCircle className="w-4 h-4" />
+                  {error}
+                </motion.div>
               )}
+            </AnimatePresence>
 
-              {/* Place Order Button */}
-              <button 
+            {/* Footer / Submit */}
+            <div className="pt-6 flex flex-col-reverse md:flex-row md:items-center justify-between gap-6">
+              <Link
+                href="/cart"
+                className="flex items-center gap-2 text-sm text-gray-500 hover:text-black transition-colors justify-center md:justify-start"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Return to cart
+              </Link>
+
+              <button
                 type="submit"
                 disabled={isSubmitting || items.length === 0}
-                className="w-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white py-4 rounded-xl font-medium text-lg hover:from-teal-600 hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:shadow-lg"
+                className="bg-black text-white px-8 py-4 rounded-xl font-medium text-lg hover:bg-gray-800 transition-all shadow-xl shadow-black/10 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed w-full md:w-auto"
               >
                 {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Processing Order...
-                  </div>
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Processing
+                  </span>
                 ) : (
-                  `Place Order - Rs ${total.toFixed(2)}`
+                  <span className="flex items-center gap-2">
+                    Complete Order <ArrowRight className="w-4 h-4" />
+                  </span>
                 )}
               </button>
             </div>
 
-            {/* Right Column - Order Summary */}
-            <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-3xl p-8 sticky top-32 shadow-lg">
-                <h2 className="text-xl font-medium text-gray-800 mb-6">Order Summary</h2>
-
-                {/* Product Items */}
-                <div className="space-y-4 mb-6 max-h-96 overflow-y-auto">
-                  {items.length === 0 ? (
-                    <div className="text-center py-8">
-                      <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-600 text-sm">Your cart is empty</p>
-                    </div>
-                  ) : (
-                    items.map((item) => (
-                      <div key={item.id} className="flex gap-4 pb-4 border-b border-gray-200">
-                        <div className="relative flex-shrink-0">
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="w-16 h-16 rounded-lg object-cover"
-                          />
-                          <span className="absolute -top-2 -right-2 w-6 h-6 bg-teal-600 text-white text-xs rounded-full flex items-center justify-center">
-                            {item.quantity}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-sm font-medium text-gray-800 mb-1 truncate">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-gray-600">{item.unit}</p>
-                          <p className="text-sm font-medium text-gray-800 mt-1">
-                            Rs {(item.price * item.quantity).toFixed(2)}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Totals */}
-                <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
-                  <div className="flex justify-between text-gray-600 text-sm">
-                    <span>Subtotal</span>
-                    <span>Rs {subtotal.toFixed(2)}</span>
-                  </div>
-                  
-                  {validatedPromoCode && (
-                    <div className="flex justify-between text-green-600 text-sm">
-                      <span>Discount ({validatedPromoCode.code})</span>
-                      <span>
-                        -Rs {discountAmount.toFixed(2)}
-                        {validatedPromoCode.discount_type === "percentage" && 
-                          ` (${validatedPromoCode.discount_value}%)`
-                        }
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-lg font-medium text-gray-800">Total</span>
-                  <span className="text-2xl font-medium text-teal-600">
-                    Rs {total.toFixed(2)}
-                  </span>
-                </div>
-
-                {validatedPromoCode && (
-  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-    <p className="text-xs text-green-700 text-center">
-      🎉 You saved Rs {discountAmount.toFixed(2)} 
-      {validatedPromoCode.discount_type === "percentage" && 
-        ` (${validatedPromoCode.discount_value}% off)`
-      }!
-    </p>
-  </div>
-)}
-              </div>
+            <div className="lg:hidden pt-8 border-t border-gray-100 text-center text-xs text-gray-400 pb-12">
+              All rights reserved Zarshay © 2024
             </div>
           </form>
         </div>
-      </section>
-
-      <Footer/>
+      </main>
     </div>
   );
 }

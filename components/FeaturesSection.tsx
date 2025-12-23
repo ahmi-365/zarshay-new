@@ -9,11 +9,11 @@ interface FeaturesSectionProps {
 
 export function FeaturesSection({ visibleSections }: FeaturesSectionProps) {
   const features = [
-    { icon: Shield, title: "NO NASTY\nCHEMICALS", delay: "0ms" },
-    { icon: Leaf, title: "VEGAN\nINGREDIENTS", delay: "100ms" },
-    { icon: Droplets, title: "CRUELTY\nFREE", delay: "200ms" },
+    { icon: Shield, title: "PREMIUM\nQUALITY", delay: "0ms" },
+    { icon: Leaf, title: "SUSTAINABLE\nFABRIC", delay: "100ms" },
+    { icon: Droplets, title: "EASY\nCARE", delay: "200ms" },
     { icon: Clock, title: "FAST\nDELIVERY", delay: "300ms" },
-    { icon: Sparkles, title: "CLINICALLY\nTESTED", delay: "400ms" },
+    { icon: Sparkles, title: "ELEGANT\nDESIGN", delay: "400ms" },
     { icon: Heart, title: "MADE WITH\nLOVE", delay: "500ms" },
   ];
 
@@ -21,10 +21,12 @@ export function FeaturesSection({ visibleSections }: FeaturesSectionProps) {
     <section id="about" className="py-20 bg-white relative" data-scroll-reveal>
       <div className="container mx-auto px-6">
         <div className="text-center mb-16">
-          <h2 className="section-title">Natural skincare with scientifically proven results</h2>
+          <h2 className="section-title">
+            Elegant fashion with timeless quality
+          </h2>
           <p className="section-subtitle">
-            Experience the purity of nature and the power of science with Bloomix — skincare
-            designed to bring out your natural glow.
+            Experience the perfect blend of comfort and style with Zarshay —
+            ladies' wear designed to elevate your confidence.
           </p>
         </div>
 
@@ -33,12 +35,14 @@ export function FeaturesSection({ visibleSections }: FeaturesSectionProps) {
             <div
               key={index}
               className={`feature-card group transform transition-all duration-700 ${
-                visibleSections["about"] ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
+                visibleSections["about"]
+                  ? "translate-y-0 opacity-100"
+                  : "translate-y-10 opacity-0"
               }`}
               style={{ transitionDelay: feature.delay }}
             >
               <div className="icon-container">
-                <feature.icon className="w-6 h-6 md:w-8 md:h-8 text-teal-500 group-hover:scale-110 transition-transform duration-300" />
+                <feature.icon className="w-6 h-6 md:w-8 md:h-8 text-black group-hover:scale-110 transition-transform duration-300" />
               </div>
               <p className="feature-text">{feature.title}</p>
             </div>

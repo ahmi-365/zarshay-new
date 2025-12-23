@@ -55,7 +55,7 @@ export default function Home() {
     <div className="min-h-screen bg-white overflow-x-hidden">
       <Navigation />
       <HeroSection scrollY={scrollY} isVisible={isVisible} />
-      <ProductCategories />
+      {/* <ProductCategories /> */}
       <FeaturedProducts /> 
       {/* <FeaturesSection visibleSections={visibleSections} /> */}
       {/* <ProductShowcase /> */}

@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Sharp Fashion Design - Minimal Radius */
+  --radius: 0rem;
+  --radius-sm: 0.125rem;
+
+  /* Fashion-optimized spacing */
+  --container-padding: 2rem;
+  --section-padding: 5rem;
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -9,6 +19,7 @@
 
   body {
     font-family: "Inter", sans-serif;
+    letter-spacing: 0.01em; /* Slightly tighter for fashion */
   }
 }
 
@@ -81,13 +92,13 @@
 }
 
 @layer components {
-  /* Consistent Button Styles */
+  /* Consistent Button Styles - Sharp Fashion Aesthetic */
   .btn-primary {
-    @apply bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 rounded-full transition-all duration-300 hover:shadow-lg hover:scale-105 shadow-teal-200/50;
+    @apply bg-black hover:bg-gray-800 text-white px-10 py-4 rounded-none border border-black transition-all duration-300 uppercase text-xs tracking-wider font-medium;
   }
 
   .btn-secondary {
-    @apply bg-white hover:bg-teal-50 text-gray-800 px-8 py-4 rounded-full border border-teal-200 hover:border-teal-300 transition-all duration-300 hover:shadow-lg hover:scale-105 backdrop-blur-sm;
+    @apply bg-white hover:bg-gray-50 text-gray-800 px-10 py-4 rounded-none border border-black hover:border-gray-600 transition-all duration-300 uppercase text-xs tracking-wider font-medium;
   }
 
   /* Typography */
@@ -101,45 +112,45 @@
 
   /* Icon Containers */
   .icon-container {
-    @apply w-12 h-12 md:w-16 md:h-16 mx-auto bg-teal-100 rounded-full flex items-center justify-center group-hover:bg-teal-200 transition-colors duration-300 group-hover:rotate-12;
+    @apply w-12 h-12 md:w-16 md:h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-gray-200 transition-colors duration-300 group-hover:rotate-12;
   }
 
   .icon-container-lg {
-    @apply w-16 h-16 md:w-20 md:h-20 mx-auto bg-teal-100 rounded-full flex items-center justify-center mb-6 group-hover:bg-teal-200 transition-colors duration-300 group-hover:rotate-12;
+    @apply w-16 h-16 md:w-20 md:h-20 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6 group-hover:bg-gray-200 transition-colors duration-300 group-hover:rotate-12;
   }
 
-  /* Card Components */
+  /* Card Components - Fashion Sharp Edges */
   .feature-card {
-    @apply text-center space-y-4 p-4 md:p-6 rounded-2xl hover:bg-teal-50 transition-all duration-300 hover:scale-105 cursor-pointer;
+    @apply text-center space-y-4 p-6 md:p-8 rounded-none border border-transparent hover:border-gray-200 transition-all duration-300 cursor-pointer;
   }
 
   .benefit-card {
-    @apply text-center space-y-4 p-6 rounded-2xl hover:bg-teal-50 transition-all duration-300 hover:scale-105 cursor-pointer;
+    @apply text-center space-y-6 p-8 rounded-none border border-transparent hover:border-gray-200 transition-all duration-300 cursor-pointer;
   }
 
   .ingredient-card {
-    @apply bg-white p-6 md:p-8 rounded-3xl shadow-lg hover:shadow-2xl shadow-teal-200/50 transition-all duration-300 hover:scale-105 cursor-pointer;
+    @apply bg-white p-8 md:p-10 rounded-none border border-gray-200 hover:border-black transition-all duration-300 cursor-pointer;
   }
 
   .category-card {
-    @apply text-center space-y-4 p-6 bg-white rounded-2xl shadow-lg hover:shadow-2xl shadow-teal-200/50 transition-all duration-300 hover:scale-105 cursor-pointer;
+    @apply text-center space-y-4 p-8 bg-white rounded-none border border-gray-200 hover:border-black transition-all duration-300 cursor-pointer;
   }
 
   .collection-card {
-    @apply relative overflow-hidden rounded-3xl shadow-lg hover:shadow-2xl shadow-teal-200/50 transition-all duration-500 cursor-pointer;
+    @apply relative overflow-hidden rounded-3xl shadow-lg hover:shadow-2xl shadow-gray-300/50 transition-all duration-500 cursor-pointer;
   }
 
   /* Text Styles */
   .feature-text {
-    @apply text-xs text-gray-600 uppercase tracking-wide font-medium whitespace-pre-line group-hover:text-teal-600 transition-colors duration-300;
+    @apply text-xs text-gray-600 uppercase tracking-wide font-medium whitespace-pre-line group-hover:text-gray-800 transition-colors duration-300;
   }
 
   .ingredient-title {
-    @apply font-medium text-gray-800 uppercase tracking-wide text-sm mb-4 group-hover:text-teal-600 transition-colors duration-300;
+    @apply font-medium text-gray-800 uppercase tracking-wide text-sm mb-4 group-hover:text-black transition-colors duration-300;
   }
 
   .category-title {
-    @apply font-medium text-gray-800 text-sm uppercase tracking-wide group-hover:text-teal-600 transition-colors duration-300;
+    @apply font-medium text-gray-800 text-sm uppercase tracking-wide group-hover:text-black transition-colors duration-300;
   }
 
   .collection-title {
@@ -157,7 +168,7 @@
 
   /* Collection Overlays */
   .collection-overlay {
-    @apply absolute inset-0 bg-gradient-to-t from-teal-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300;
+    @apply absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300;
   }
 
   .collection-content {
@@ -170,16 +181,17 @@
 
   /* Floating Elements */
   .floating-element {
-    @apply absolute bg-white rounded-full p-4 shadow-lg shadow-teal-200/50 animate-bounce;
+    @apply absolute bg-white rounded-full p-4 shadow-lg shadow-gray-300/50 animate-bounce;
   }
 
   /* Shadow Styles */
   .shadow-primary {
-    box-shadow: 0 10px 25px -3px rgba(20, 184, 166, 0.1), 0 4px 6px -2px rgba(20, 184, 166, 0.05);
+    box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
   .shadow-primary-lg {
-    box-shadow: 0 25px 50px -12px rgba(20, 184, 166, 0.25);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
   }
 
   /* Newsletter Components */
@@ -188,41 +200,42 @@
   }
 
   .newsletter-button {
-    @apply bg-white text-teal-600 hover:bg-teal-50 px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 shadow-lg font-medium;
+    @apply bg-white text-black hover:bg-gray-100 px-8 py-4 rounded-full transition-all duration-300 hover:scale-105 shadow-lg font-medium;
   }
 
   /* Footer Components */
   .social-icon {
-    @apply w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-teal-600 transition-colors duration-300 cursor-pointer;
+    @apply w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center hover:bg-black transition-colors duration-300 cursor-pointer;
   }
 
   .footer-link {
-    @apply text-gray-400 hover:text-teal-400 transition-colors duration-300 text-sm;
+    @apply text-gray-400 hover:text-gray-200 transition-colors duration-300 text-sm;
   }
 }
 
-/* Custom scrollbar with teal theme */
+/* Custom scrollbar with monochrome theme */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0fdfa;
+  background: #f5f5f5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #14b8a6;
+  background: #000000;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #0f766e;
+  background: #333333;
 }
 
 /* Global transitions */
 * {
-  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow,
-    transform, filter, backdrop-filter;
+  transition-property: color, background-color, border-color,
+    text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter,
+    backdrop-filter;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
